@@ -2,6 +2,8 @@ package com.gaurab.auth.ui;
 
 import android.util.Log;
 
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.gaurab.auth.data.pojo.RegisterBody;
@@ -9,15 +11,28 @@ import com.gaurab.auth.utility.ServiceProvider;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 public class RegisterViewModel extends ViewModel {
 
-    private static final String KEY_FULL_NAME = "full_name";
-    private static final String KEY_EMAIL = "email";
-    private static final String KEY_PASSWORD = "password";
-    private static final String KEY_CONFIRM_PASSWORD = "confirm_password";
+    ExecutorService executor = Executors.newCachedThreadPool();
+
+    public static final String KEY_FULL_NAME = "full_name";
+    public static final String KEY_EMAIL = "email";
+    public static final String KEY_PASSWORD = "password";
+    public static final String KEY_CONFIRM_PASSWORD = "confirm_password";
+
+    private MutableLiveData<Map<String, String>>  _formErrors = new MutableLiveData<>();
+    LiveData<Map<String,String>> formErrors = _formErrors;
+
+    @Override
+    protected void onCleared() {
+        executor.shutdown();
+        super.onCleared();
+    }
 
     Map<String, String> validateFullName(String fullName){
         HashMap<String, String> fullNameErrors = new HashMap<>();
@@ -56,15 +71,42 @@ public class RegisterViewModel extends ViewModel {
         if(confirmPassword.isEmpty()){
             confirmPasswordErrors.put(KEY_CONFIRM_PASSWORD, "Confirm Password is required");
         } else if (validatePassword(password).isEmpty() && !password.equals(confirmPassword)) {
-            confirmPasswordErrors.put(KEY_CONFIRM_PASSWORD, "Passwords do not match.")
+            confirmPasswordErrors.put(KEY_CONFIRM_PASSWORD, "Passwords do not match.");
         }
 
         return confirmPasswordErrors;
     }
 
+    public boolean validate(String fullName, String email, String password, String confirmPassword) {
+
+        HashMap<String, String> errorContainer = new HashMap<>();
+
+        Map<String, String> fullNameErrors = validateFullName(fullName);
+        Map<String, String> emailErrors = validateEmail(email);
+        Map<String, String> passwordErrors = validatePassword(password);
+        Map<String, String> confirmPasswordErrors = validateConfirmPassword(password, confirmPassword);
+
+        errorContainer.putAll(fullNameErrors);
+        errorContainer.putAll(emailErrors);
+        errorContainer.putAll(passwordErrors);
+        errorContainer.putAll(confirmPasswordErrors);
+
+        _formErrors.setValue(errorContainer);
+
+        return errorContainer.isEmpty();
+    }
+
+    public void onRegisterClicked(String fullName, String email, String password, String confirmPassword){
+        if(validate(fullName, email, password, confirmPassword)){
+            registerUser(
+                    new RegisterBody(fullName, email, password, confirmPassword)
+            );
+        }
+    }
+
 
     public void registerUser(RegisterBody registerBody){
-        Executors.newSingleThreadExecutor().execute(() -> {
+        executor.execute(() -> {
             try {
                 ServiceProvider.getService().registerUser(registerBody).execute();
 
@@ -74,4 +116,6 @@ public class RegisterViewModel extends ViewModel {
             }
         });
     }
-    }
+
+
+}
