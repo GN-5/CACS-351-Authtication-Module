@@ -1,22 +1,33 @@
 package com.gaurab.auth.ui;
 
+import android.app.Application;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.gaurab.auth.data.pojo.RegisterBody;
+import com.gaurab.auth.data.pojo.RegisterResponse;
+import com.gaurab.auth.data.pojo.UserResponse;
+import com.gaurab.auth.utility.AppStorage;
 import com.gaurab.auth.utility.ServiceProvider;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
-public class RegisterViewModel extends ViewModel {
+import okhttp3.ResponseBody;
+import retrofit2.Response;
+
+public class RegisterViewModel extends AndroidViewModel {
 
     ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -27,6 +38,19 @@ public class RegisterViewModel extends ViewModel {
 
     private MutableLiveData<Map<String, String>>  _formErrors = new MutableLiveData<>();
     LiveData<Map<String,String>> formErrors = _formErrors;
+
+    private MutableLiveData<Boolean>  _isLoading = new MutableLiveData<>();
+    LiveData<Boolean> isLoading = _isLoading;
+
+    private MutableLiveData<UserResponse>  _registrationSuccess = new MutableLiveData<>();
+    LiveData<UserResponse> registerUser = _registrationSuccess;
+
+    private AppStorage appStorage;
+
+    public RegisterViewModel(@NonNull Application application) {
+        super(application);
+        appStorage = new AppStorage(application);
+    }
 
     @Override
     protected void onCleared() {
@@ -108,11 +132,45 @@ public class RegisterViewModel extends ViewModel {
     public void registerUser(RegisterBody registerBody){
         executor.execute(() -> {
             try {
-                ServiceProvider.getService().registerUser(registerBody).execute();
+                _isLoading.postValue(true);
+                Response<RegisterResponse> response = ServiceProvider.getService().registerUser(registerBody).execute();
+                if(response.isSuccessful()){
+                    RegisterResponse registerResponse = response.body();
+                    if(registerResponse == null){
+                        throw new RuntimeException("No Register response available");
+
+                    }
+                    appStorage.saveToken(registerResponse.getToken());
+                    _registrationSuccess.postValue(registerResponse.getUser());
+                }else {
+                    //{"email:["The email is already taken.]} response occurs
+                    try (ResponseBody errorRes = response.errorBody()) {
+                        if (errorRes != null) {
+                            String errorString = errorRes.string();
+                            //Now convert raw response to class GSON
+                            //Map<String, List<String>>
+                            TypeToken<Map<String, List<String>>>  typeToken = new TypeToken<Map<String, List<String>>>() {};
+                            Map<String, List<String>> mapError = new Gson().fromJson(errorString, typeToken);
+                            HashMap<String, String> parsedError = new HashMap<>();
+
+                            for(String key: mapError.keySet()){
+                                List<String> errorList = mapError.get(key);
+                                if(errorList != null && !errorList.isEmpty()){
+                                    parsedError.put(key, errorList.get(0));
+                                }
+                            }
+
+                            _formErrors.postValue(parsedError);
+                        }
+                    }
+                }
 
             } catch (Exception e) {
                 // If no internet, it will reach this condition
                 Log.e("API_FAILED", "RegisterUser: ", e);
+            }
+            finally {
+                _isLoading.postValue(false);
             }
         });
     }

@@ -9,6 +9,8 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
@@ -18,6 +20,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.gaurab.auth.R;
+import com.gaurab.auth.utility.AppStorage;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -35,6 +38,9 @@ public class RegisterFragment extends Fragment {
     TextInputEditText passwordEt;
     TextInputLayout confirmPasswordTil;
     TextInputEditText confirmPasswordEt;
+    ConstraintLayout progressLayout;
+
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -55,7 +61,7 @@ public class RegisterFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
 
-        initializeView();
+        initializeView(view);
         setupObservers();
     }
 
@@ -72,6 +78,8 @@ public class RegisterFragment extends Fragment {
         confirmPasswordTil = view.findViewById(R.id.confirmPasswordTIL);
         confirmPasswordEt = view.findViewById(R.id.confirmPassword);
 
+        progressLayout = view.findViewById(R.id.progessLayout);
+
         view.findViewById(R.id.registerBtn).setOnClickListener((registerBtnView)->{
             viewModel.onRegisterClicked(
                     Objects.requireNonNull(fullNameEt.getText()).toString(),
@@ -80,12 +88,21 @@ public class RegisterFragment extends Fragment {
                     Objects.requireNonNull(confirmPasswordEt.getText()).toString()
             );
         });
+
+
     }
 
-    private void setupObservers(){
-        viewModel.formErrors.observe(requireActivity(), formErrors ->{
+    private void setupObservers() {
+        viewModel.formErrors.observe(requireActivity(), formErrors -> {
             handleFormErrors(formErrors);
         });
+        viewModel.isLoading.observe(requireActivity(), this::handleIsLoading);
+    }
+
+    private void handleIsLoading(Boolean isLoading){
+        progressLayout.setVisibility(
+                isLoading ? View.VISIBLE : View.GONE
+        );
     }
 
     private void handleFormErrors(Map<String, String> formErrors){
