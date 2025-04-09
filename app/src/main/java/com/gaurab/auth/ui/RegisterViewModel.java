@@ -17,6 +17,7 @@ import com.gaurab.auth.utility.ServiceProvider;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,9 @@ public class RegisterViewModel extends AndroidViewModel {
 
     private MutableLiveData<UserResponse>  _registrationSuccess = new MutableLiveData<>();
     LiveData<UserResponse> registerUser = _registrationSuccess;
+
+    private MutableLiveData<String> _message = new MutableLiveData<>();
+    LiveData<String> message = _message;
 
     private AppStorage appStorage;
 
@@ -168,6 +172,13 @@ public class RegisterViewModel extends AndroidViewModel {
             } catch (Exception e) {
                 // If no internet, it will reach this condition
                 Log.e("API_FAILED", "RegisterUser: ", e);
+
+                //this means no internet
+                if(e instanceof IOException){
+                    _message.postValue("Please check your internet and try again.");
+                }else{
+                    _message.postValue("Something went wrong. Please try again later.");
+                }
             }
             finally {
                 _isLoading.postValue(false);

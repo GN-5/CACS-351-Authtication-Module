@@ -5,6 +5,7 @@ import static com.gaurab.auth.ui.RegisterViewModel.KEY_EMAIL;
 import static com.gaurab.auth.ui.RegisterViewModel.KEY_FULL_NAME;
 import static com.gaurab.auth.ui.RegisterViewModel.KEY_PASSWORD;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -18,8 +19,10 @@ import androidx.lifecycle.ViewModelProvider;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.gaurab.auth.R;
+import com.gaurab.auth.data.pojo.UserResponse;
 import com.gaurab.auth.utility.AppStorage;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -78,7 +81,7 @@ public class RegisterFragment extends Fragment {
         confirmPasswordTil = view.findViewById(R.id.confirmPasswordTIL);
         confirmPasswordEt = view.findViewById(R.id.confirmPassword);
 
-        progressLayout = view.findViewById(R.id.progessLayout);
+        progressLayout = view.findViewById(R.id.progressLayout);
 
         view.findViewById(R.id.registerBtn).setOnClickListener((registerBtnView)->{
             viewModel.onRegisterClicked(
@@ -103,6 +106,20 @@ public class RegisterFragment extends Fragment {
         progressLayout.setVisibility(
                 isLoading ? View.VISIBLE : View.GONE
         );
+    }
+
+    private void handleRegistrationSuccess(UserResponse userResponse){
+        Toast.makeText(requireActivity(), userResponse.getName() + " Logged in successfully.", Toast.LENGTH_LONG).show();
+        //now navigate to dashboard or home screen.
+    }
+    private void handleMessage(String message){
+        new AlertDialog.Builder(requireActivity())
+                .setTitle("Message")
+                .setMessage(message)
+                .setPositiveButton(
+                        "OK",
+                        (dialog, which)-> dialog.dismiss()
+                ).show();
     }
 
     private void handleFormErrors(Map<String, String> formErrors){
