@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
@@ -19,14 +20,21 @@ import androidx.lifecycle.ViewModelProvider;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.gaurab.auth.R;
 import com.gaurab.auth.data.pojo.UserResponse;
+import com.gaurab.auth.model.Country;
 import com.gaurab.auth.utility.AppStorage;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -92,7 +100,47 @@ public class RegisterFragment extends Fragment {
             );
         });
 
+        ListView countriesList = view.findViewById(R.id.countries);
+        List<String> countries = Arrays.asList("Nepal", "India", "bangladesh", "Bhutan", "Sri Lanka");
+        List<Country> countriesWithFlag = Arrays.asList(
+          new Country(
+                  R.drawable.ic_launcher_background,
+                  R.string.nepal
+          ),
+          new Country(
+                  R.drawable.ic_launcher_foreground,
+                  R.string.india
+          )
+        );
+        countriesList.setAdapter(
+                new ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, countries){
+                    private View inflateView(int position, @Nullable View convertView, @NonNull ViewGroup parent){
+                        View view = LayoutInflater.from(requireContext()).inflate(R.layout.country_list_item, parent, false);
 
+                        TextView countryName = view.findViewById(R.id.country);
+                        ImageView countryFlag = view.findViewById(R.id.flag);
+
+                        Country country = countriesWithFlag.get(position);
+                        countryName.setText(getString(country.getName()));
+                        countryFlag.setImageDrawable(ContextCompat.getDrawable(requireContext(), country.getFlag()));
+
+                        return view;
+                    }
+
+                    @NonNull
+                    @Override
+                    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                        return inflateView(position, convertView, parent);
+                    }
+
+                    @Override
+                    public View getDropDownView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                        return inflateView(position, convertView, parent);
+                    }
+                }
+
+
+        );
     }
 
     private void setupObservers() {
