@@ -1,0 +1,13 @@
+{
+  "first_name": "Gaurab",
+  "last_name": "Neupane",
+  "email": "gaurabn23@gmail.com",
+  "address": {
+    "country": "Nepal",
+    "region": "Bagmati",
+    "district": "Kathmandu",
+    "address_line": "Hepali Height, Budhanilkantha - 7",
+    "isInsideRingroad": false,
+    "house_no": 1004
+  }
+}
